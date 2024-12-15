@@ -6,6 +6,4 @@ module "im-workspace" {
  deployment_id = "gcp-scheduler-new"
  im_deployment_repo_uri = "https://github.com/mmdcloud/gcp-scheduler-pub-sub"
  im_deployment_ref = "main"
-
- github_app_installation_id = "43592853"
 }
