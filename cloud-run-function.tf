@@ -20,7 +20,7 @@ resource "google_cloudfunctions2_function" "event-scheduler-trigger-function" {
   description = "event-scheduler-trigger-function"
 
   build_config {
-    runtime     = "nodejs16"
+    runtime     = "nodejs20"
     entry_point = "helloPubSub"
     environment_variables = {
       BUILD_CONFIG_TEST = "build_test"
