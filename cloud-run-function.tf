@@ -34,16 +34,17 @@ resource "google_cloudfunctions2_function" "event-scheduler-trigger-function" {
   }
 
   service_config {
+    environment_variables = {
+      SERVICE_CONFIG_TEST      = "config_test"
+      SERVICE_CONFIG_DIFF_TEST = google_service_account.event-scheduler-service-account.email
+    }
     max_instance_count               = 2
     min_instance_count               = 1
     available_memory                 = "4Gi"
     timeout_seconds                  = 60
     max_instance_request_concurrency = 80
     available_cpu                    = "4"
-    environment_variables = {
-      SERVICE_CONFIG_TEST      = "config_test"
-      SERVICE_CONFIG_DIFF_TEST = google_service_account.event-scheduler-service-account.email
-    }
+    
     ingress_settings               = "ALLOW_INTERNAL_ONLY"
     all_traffic_on_latest_revision = true
     service_account_email          = google_service_account.event-scheduler-service-account.email
