@@ -1,2 +1,3 @@
-terraform.*
-.terraform*
+.gitignore
+terraform/terraform.*
+terraform/.terraform*
