@@ -1,4 +1,19 @@
 # Service Account
+data "google_compute_default_service_account" "default_sa" {}
+
+resource "google_project_iam_member" "default_sa_permissions" {
+  for_each = toset([
+    "roles/logging.logWriter",
+    "roles/storage.objectViewer",
+    "roles/artifactregistry.writer"
+  ])
+  
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:${data.google_compute_default_service_account.default_sa.email}"
+}
+
+# Service Account
 module "sa" {
   source       = "./modules/service-account"
   account_id   = "event-scheduler-sa"
@@ -59,5 +74,5 @@ module "event_scheduler_trigger_function" {
   event_trigger_event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
   event_trigger_topic        = module.pubsub.topic_id
   event_trigger_retry_policy = "RETRY_POLICY_RETRY"
-  depends_on                 = [module.sa]
+  depends_on                 = [module.sa,google_project_iam_member.default_sa_permissions]
 }
