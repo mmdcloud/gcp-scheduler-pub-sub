@@ -7,7 +7,7 @@ variable "handler" {}
 
 variable "ingress_settings" {}
 variable "all_traffic_on_latest_revision" {}
-variable "function_app_service_account_email" {}
+# variable "function_app_service_account_email" {}
 variable "max_instance_count" {}
 variable "min_instance_count" {}
 variable "available_memory" {}
