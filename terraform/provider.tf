@@ -12,6 +12,6 @@ terraform {
 }
 
 provider "google" {
-  project = "encoded-alpha-457108-e8"
+  project = "orbital-bee-455915-h5"
   region  = var.location
 }

@@ -5,5 +5,5 @@ variable "location" {
 
 variable "project_id" {
   type    = string
-  default = "encoded-alpha-457108-e8"
+  default = "orbital-bee-455915-h5"
 }
