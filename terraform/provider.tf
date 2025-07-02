@@ -2,7 +2,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "6.12.0"
+      version = "~> 6.0"
     }
     time = {
       source  = "hashicorp/time"
@@ -12,6 +12,6 @@ terraform {
 }
 
 provider "google" {
-  project = "orbital-bee-455915-h5"
+  project = "encoded-alpha-457108-e8"
   region  = var.location
 }
