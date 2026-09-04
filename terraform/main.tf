@@ -18,11 +18,10 @@ resource "time_sleep" "wait_60_seconds" {
   # depends_on      = [module.some_module]
 }
 
-
 # PubSub
 module "pubsub" {
   source                     = "./modules/pubsub"
-  name                       = "event-scheduler-topic"
+  topic_name                 = "event-scheduler-topic"
   message_retention_duration = "86600s"
 }
 
