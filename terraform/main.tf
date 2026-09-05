@@ -27,12 +27,14 @@ module "pubsub" {
 
 # Scheduler 
 module "scheduler" {
-  source            = "./modules/scheduler"
-  name              = "event-scheduler-job"
-  description       = "event-scheduler-job"
-  schedule          = "*/5 * * * *"
-  pubsub_topic_name = module.pubsub.topic_id
-  pubsub_data       = base64encode("Mohit !")
+  source      = "./modules/scheduler"
+  name        = "event-scheduler-job"
+  description = "event-scheduler-job"
+  schedule    = "*/5 * * * *"
+  pubsub_target = {
+    topic_name = module.pubsub.topic_id
+    data       = base64encode("Mohit !")
+  }
 }
 
 # Source Code Bucker
@@ -51,25 +53,37 @@ module "function_code_bucket" {
 
 # Cloud Run Function (Any cloud run function can only have one trigger at a time)
 module "event_scheduler_trigger_function" {
-  source                           = "./modules/cloud-run-function"
-  function_name                    = "event-scheduler-trigger-function"
-  function_description             = "event-scheduler-trigger-function"
-  handler                          = "helloPubSub"
-  runtime                          = "nodejs20"
-  location                         = var.location
-  storage_source_bucket            = module.function_code_bucket.bucket_name
-  storage_source_bucket_object     = module.function_code_bucket.objects[0].name
-  max_instance_count               = 2
-  min_instance_count               = 1
-  available_memory                 = "4Gi"
-  timeout_seconds                  = 60
-  max_instance_request_concurrency = 80
-  available_cpu                    = "4"
-  ingress_settings                 = "ALLOW_INTERNAL_ONLY"
-  all_traffic_on_latest_revision   = true
+  source               = "./modules/cloud-run-function"
+  project_id           = var.project_id
+  function_name        = "event-scheduler-trigger-function"
+  function_description = "event-scheduler-trigger-function"
+  location             = var.location
 
-  event_trigger_event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
-  event_trigger_topic        = module.pubsub.topic_id
-  event_trigger_retry_policy = "RETRY_POLICY_RETRY"
-  depends_on                 = [time_sleep.wait_60_seconds]
+  build_config = {
+    handler = "helloPubSub"
+    runtime = "nodejs20"
+    storage_source = {
+      bucket = module.function_code_bucket.bucket_name
+      object = module.function_code_bucket.objects[0].name
+    }
+  }
+
+  service_config = {
+    max_instance_count               = 2
+    min_instance_count               = 1
+    available_memory                 = "4Gi"
+    timeout_seconds                  = 60
+    max_instance_request_concurrency = 80
+    available_cpu                    = "4"
+    ingress_settings                 = "ALLOW_INTERNAL_ONLY"
+    all_traffic_on_latest_revision   = true
+  }
+
+  event_trigger = {
+    event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic = module.pubsub.topic_id
+    retry_policy = "RETRY_POLICY_RETRY"
+  }
+
+  depends_on = [time_sleep.wait_60_seconds]
 }
