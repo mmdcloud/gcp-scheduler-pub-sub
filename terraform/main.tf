@@ -1,67 +1,68 @@
-# Service Account
+# Service Account Data Source
 data "google_compute_default_service_account" "default_sa" {}
 
+# IAM Role Assignments
 resource "google_project_iam_member" "default_sa_permissions" {
-  for_each = toset([
-    "roles/logging.logWriter",
-    "roles/storage.objectViewer",
-    "roles/artifactregistry.writer"
-  ])
+  for_each = toset(var.iam_roles)
 
   project = var.project_id
   role    = each.value
   member  = "serviceAccount:${data.google_compute_default_service_account.default_sa.email}"
 }
 
-resource "time_sleep" "wait_60_seconds" {
-  create_duration = "60s"
-  # depends_on      = [module.some_module]
+# IAM Propagation Wait Timer
+resource "time_sleep" "wait_for_iam" {
+  create_duration = var.propagation_delay
+
+  depends_on = [google_project_iam_member.default_sa_permissions]
 }
 
-# PubSub
+# PubSub Module
 module "pubsub" {
   source                     = "./modules/pubsub"
-  topic_name                 = "event-scheduler-topic"
-  message_retention_duration = "86600s"
+  topic_name                 = var.pubsub_config.topic_name
+  message_retention_duration = var.pubsub_config.message_retention_duration
 }
 
-# Scheduler 
+# Scheduler Module
 module "scheduler" {
   source      = "./modules/scheduler"
-  name        = "event-scheduler-job"
-  description = "event-scheduler-job"
-  schedule    = "*/5 * * * *"
+  name        = var.scheduler_config.name
+  description = var.scheduler_config.description
+  schedule    = var.scheduler_config.schedule
+
   pubsub_target = {
     topic_name = module.pubsub.topic_id
-    data       = base64encode("Mohit !")
+    data       = base64encode(var.scheduler_config.payload)
   }
 }
 
-# Source Code Bucker
+# Source Code Storage Bucket
 module "function_code_bucket" {
   source                      = "./modules/gcs"
-  bucket_name                 = "event-scheduler-trigger-function-code"
+  bucket_name                 = var.function_code_bucket_name
   location                    = var.location
   uniform_bucket_level_access = true
+
   objects = [
     {
-      name   = "code.zip"
-      source = "./files/code.zip"
+      name   = var.function_code_object_name
+      source = var.function_code_source_file
     }
   ]
 }
 
-# Cloud Run Function (Any cloud run function can only have one trigger at a time)
+# Cloud Run Function
 module "event_scheduler_trigger_function" {
   source               = "./modules/cloud-run-function"
   project_id           = var.project_id
-  function_name        = "event-scheduler-trigger-function"
-  function_description = "event-scheduler-trigger-function"
+  function_name        = var.function_config.name
+  function_description = var.function_config.description
   location             = var.location
 
   build_config = {
-    handler = "helloPubSub"
-    runtime = "nodejs20"
+    handler = var.function_config.handler
+    runtime = var.function_config.runtime
     storage_source = {
       bucket = module.function_code_bucket.bucket_name
       object = module.function_code_bucket.objects[0].name
@@ -69,21 +70,21 @@ module "event_scheduler_trigger_function" {
   }
 
   service_config = {
-    max_instance_count               = 2
-    min_instance_count               = 1
-    available_memory                 = "4Gi"
-    timeout_seconds                  = 60
-    max_instance_request_concurrency = 80
-    available_cpu                    = "4"
-    ingress_settings                 = "ALLOW_INTERNAL_ONLY"
-    all_traffic_on_latest_revision   = true
+    max_instance_count               = var.function_config.service.max_instance_count
+    min_instance_count               = var.function_config.service.min_instance_count
+    available_memory                 = var.function_config.service.available_memory
+    timeout_seconds                  = var.function_config.service.timeout_seconds
+    max_instance_request_concurrency = var.function_config.service.max_instance_request_concurrency
+    available_cpu                    = var.function_config.service.available_cpu
+    ingress_settings                 = var.function_config.service.ingress_settings
+    all_traffic_on_latest_revision   = var.function_config.service.all_traffic_on_latest_revision
   }
 
   event_trigger = {
     event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic = module.pubsub.topic_id
-    retry_policy = "RETRY_POLICY_RETRY"
+    retry_policy = var.function_config.retry_policy
   }
 
-  depends_on = [time_sleep.wait_60_seconds]
+  depends_on = [time_sleep.wait_for_iam]
 }

@@ -10,10 +10,10 @@ resource "google_cloudfunctions2_function" "function" {
   labels      = var.labels
 
   kms_key_name = var.kms_key_name
-
+  
   dynamic "build_config" {
     for_each = var.build_config != null ? [var.build_config] : []
-    content {
+    content {      
       runtime               = build_config.value.runtime
       entry_point           = build_config.value.handler
       environment_variables = build_config.value.build_environment_variables
@@ -50,7 +50,7 @@ resource "google_cloudfunctions2_function" "function" {
     content {
       max_instance_count               = service_config.value.max_instance_count
       min_instance_count               = service_config.value.min_instance_count
-      max_instance_request_concurrency = service_config.value.max_instance_request_concurrency
+      max_instance_request_concurrency = service_config.value.max_instance_request_concurrency      
       available_memory                 = service_config.value.available_memory
       available_cpu                    = service_config.value.available_cpu
       timeout_seconds                  = service_config.value.timeout_seconds
